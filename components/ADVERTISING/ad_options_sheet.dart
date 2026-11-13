@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/ad.dart';
 import '../../theme/app_typography.dart';
+import '../common/asterisk_menu.dart';
 
 /// Shows the ad's "..." options sheet: two rounded, grouped panels —
 /// informational rows about the ad/account, then a feedback row
@@ -158,65 +159,17 @@ class _AdSheetOption {
 
 class _AdOptionGroup extends StatelessWidget {
   final List<_AdSheetOption> options;
-
   const _AdOptionGroup({required this.options});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Material(
-        color: isDark ? const Color(0xFF1C1F27) : Colors.white,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < options.length; i++) ...[
-              _buildRow(options[i], isDark),
-              if (i != options.length - 1)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: isDark ? const Color(0xFF2B2F3A) : const Color(0xFFF0F0F0),
-                ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRow(_AdSheetOption option, bool isDark) {
-    final color = option.isDestructive
-        ? const Color(0xFFE0453C)
-        : (isDark ? const Color(0xFFF2F2F4) : const Color(0xFF1A1A1A));
-
-    return Builder(
-      builder: (context) {
-        return InkWell(
-          onTap: () => option.onTap(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Icon(option.icon, size: 21, color: color),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    option.label,
-                    style: AppTypography.body(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return AsteriskMenuGroup(
+      children: options.map((option) => AsteriskMenuRow(
+        icon: option.icon,
+        title: option.label,
+        destructive: option.isDestructive,
+        onTap: () => option.onTap(context),
+      )).toList(),
     );
   }
 }
