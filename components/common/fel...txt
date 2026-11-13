@@ -1,0 +1,241 @@
+Good catch — and worth being upfront about how I'm reading this, since "the post card's default avatar" could mean one of two things in the current code. Post cards render their avatar through the shared Avatar widget, and its fallback (no image / still loading / failed) is a grey circle with the user's first initial — not the person-icon silhouette the story tray currently shows. So I'm taking this as: make the story tray fall back to that same initials style, rather than the generic icon.
+
+Rather than just copy-pasting the initials logic into story_bubble.dart too, I pulled it out into one shared DefaultAvatar widget and pointed every avatar fallback at it — Avatar (post cards, comments, shared-from rows), StoryBubble, and CreateStoryBubble (the "Add Story" bubble, for the same consistency reason). That way there's exactly one definition of "what our default avatar looks like" going forward, so this kind of mismatch can't creep back in as more places grow their own avatar slot.
+
+One deliberate exception: I left StoryViewer's full-screen fallback (white person icon) alone, since it sits directly over video/photo content and needs to stay visible regardless of background — a dark-grey-on-grey initial would likely disappear there. Say the word if you want that unified too.
+
+New file: lib/components/common/default_avatar.dart
+
+dart
+import 'package:flutter/material.dart';
+
+import '../../models/user.dart';
+
+/// The app's single default/fallback avatar: a plain circle showing the
+/// user's initial. Used anywhere there's no avatar image to show yet —
+/// no URL, still loading, or failed to load — so every avatar in the
+/// app (story bubbles, post cards, comments, etc.) falls back to
+/// exactly the same look instead of each place inventing its own.
+class DefaultAvatar extends StatelessWidget {
+  final User user;
+  final double size;
+
+  const DefaultAvatar({
+    super.key,
+    required this.user,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial =
+        user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?';
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFE8E8E8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF666666),
+        ),
+      ),
+    );
+  }
+}
+
+lib/components/common/Avatar.dart — add the import and simplify the fallback to delegate to it:
+
+dart
+import 'default_avatar.dart';
+dart
+  Widget _buildFallback() {
+    return DefaultAvatar(user: user, size: size);
+  }
+
+lib/components/stories/story_bubble.dart — add the import:
+
+dart
+import '../common/default_avatar.dart';
+
+Replace _buildAvatar() and remove _buildDefaultAvatar() entirely:
+
+dart
+  Widget _buildAvatar() {
+    final avatarUrl = story.user.avatarUrl;
+    final avatarSlotSize = size - 6; // matches the 3px ring padding inset
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return DefaultAvatar(user: story.user, size: avatarSlotSize);
+    }
+
+    return Image.network(
+      avatarUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return DefaultAvatar(user: story.user, size: avatarSlotSize);
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+        return DefaultAvatar(user: story.user, size: avatarSlotSize);
+      },
+    );
+  }
+
+lib/components/stories/create_story_bubble.dart — add the import:
+
+dart
+import '../common/default_avatar.dart';
+
+Replace _buildAvatar():
+
+dart
+  Widget _buildAvatar() {
+    final avatarUrl = user.avatarUrl;
+    final avatarSlotSize = size - 5; // matches the 2.5px ring padding inset
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return DefaultAvatar(user: user, size: avatarSlotSize);
+    }
+
+    return Image.network(
+      avatarUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return DefaultAvatar(user: user, size: avatarSlotSize);
+      },
+    );
+  }
+
+Both bubbles now pass the actual rendered avatar diameter (accounting for their ring's padding inset) rather than the outer bubble size, so the initial's font scales correctly relative to the visible circle instead of being sized for a slightly larger box.
+
+Let me know if that matches what you had in mind, or if "post card's default avatar" meant something else entirely — quick to adjust either way.Good catch — and worth being upfront about how I'm reading this, since "the post card's default avatar" could mean one of two things in the current code. Post cards render their avatar through the shared Avatar widget, and its fallback (no image / still loading / failed) is a grey circle with the user's first initial — not the person-icon silhouette the story tray currently shows. So I'm taking this as: make the story tray fall back to that same initials style, rather than the generic icon.
+
+Rather than just copy-pasting the initials logic into story_bubble.dart too, I pulled it out into one shared DefaultAvatar widget and pointed every avatar fallback at it — Avatar (post cards, comments, shared-from rows), StoryBubble, and CreateStoryBubble (the "Add Story" bubble, for the same consistency reason). That way there's exactly one definition of "what our default avatar looks like" going forward, so this kind of mismatch can't creep back in as more places grow their own avatar slot.
+
+One deliberate exception: I left StoryViewer's full-screen fallback (white person icon) alone, since it sits directly over video/photo content and needs to stay visible regardless of background — a dark-grey-on-grey initial would likely disappear there. Say the word if you want that unified too.
+
+New file: lib/components/common/default_avatar.dart
+
+dart
+import 'package:flutter/material.dart';
+
+import '../../models/user.dart';
+
+/// The app's single default/fallback avatar: a plain circle showing the
+/// user's initial. Used anywhere there's no avatar image to show yet —
+/// no URL, still loading, or failed to load — so every avatar in the
+/// app (story bubbles, post cards, comments, etc.) falls back to
+/// exactly the same look instead of each place inventing its own.
+class DefaultAvatar extends StatelessWidget {
+  final User user;
+  final double size;
+
+  const DefaultAvatar({
+    super.key,
+    required this.user,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial =
+        user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?';
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFE8E8E8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF666666),
+        ),
+      ),
+    );
+  }
+}
+
+lib/components/common/Avatar.dart — add the import and simplify the fallback to delegate to it:
+
+dart
+import 'default_avatar.dart';
+dart
+  Widget _buildFallback() {
+    return DefaultAvatar(user: user, size: size);
+  }
+
+lib/components/stories/story_bubble.dart — add the import:
+
+dart
+import '../common/default_avatar.dart';
+
+Replace _buildAvatar() and remove _buildDefaultAvatar() entirely:
+
+dart
+  Widget _buildAvatar() {
+    final avatarUrl = story.user.avatarUrl;
+    final avatarSlotSize = size - 6; // matches the 3px ring padding inset
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return DefaultAvatar(user: story.user, size: avatarSlotSize);
+    }
+
+    return Image.network(
+      avatarUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return DefaultAvatar(user: story.user, size: avatarSlotSize);
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+        return DefaultAvatar(user: story.user, size: avatarSlotSize);
+      },
+    );
+  }
+
+lib/components/stories/create_story_bubble.dart — add the import:
+
+dart
+import '../common/default_avatar.dart';
+
+Replace _buildAvatar():
+
+dart
+  Widget _buildAvatar() {
+    final avatarUrl = user.avatarUrl;
+    final avatarSlotSize = size - 5; // matches the 2.5px ring padding inset
+
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return DefaultAvatar(user: user, size: avatarSlotSize);
+    }
+
+    return Image.network(
+      avatarUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return DefaultAvatar(user: user, size: avatarSlotSize);
+      },
+    );
+  }
+
+Both bubbles now pass the actual rendered avatar diameter (accounting for their ring's padding inset) rather than the outer bubble size, so the initial's font scales correctly relative to the visible circle instead of being sized for a slightly larger box.
+
+Let me know if that matches what you had in mind, or if "post card's default avatar" meant something else entirely — quick to adjust either way.
