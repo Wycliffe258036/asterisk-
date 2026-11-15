@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'components/header/home_header.dart';
 import 'models/user.dart';
 import 'components/PAGE/HomePage.dart';
+import 'theme/app_theme.dart';
 import 'theme/app_theme_controller.dart';
+import 'theme/sky_gradient_background.dart';
 
 void main() {
   runApp(const SocialApp());
@@ -34,17 +36,12 @@ class _SocialAppState extends State<SocialApp> {
         builder: (context, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Social App',
+            title: 'Asterisk',
             themeMode: _themeController.themeMode,
-            theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              scaffoldBackgroundColor: Colors.transparent,
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: Colors.transparent,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            builder: (context, child) => SkyGradientBackground(
+              child: child ?? const SizedBox.shrink(),
             ),
             home: const HomePage(),
           );
@@ -72,15 +69,12 @@ class HeaderTestPage extends StatelessWidget {
           children: [
             HomeHeader(
               currentUser: user,
-              appName: 'Asterix',
+              appName: 'Asterisk',
               unreadNotifications: 4,
             ),
-
             const Expanded(
               child: Center(
-                child: Text(
-                  'Stories and feed will appear here',
-                ),
+                child: Text('Stories and feed will appear here'),
               ),
             ),
           ],
@@ -88,4 +82,4 @@ class HeaderTestPage extends StatelessWidget {
       ),
     );
   }
-}  
+}
