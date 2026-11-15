@@ -11,7 +11,6 @@ import '../../models/pagination.dart';
 import '../../models/post.dart';
 import '../../models/story.dart';
 import '../../models/user.dart';
-import '../../theme/sky_gradient_background.dart';
 
 import '../nav/FloatingNavBar.dart';
 import '../nav/nav_navigation4.dart';
@@ -1496,43 +1495,41 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
 
-    return SkyGradientBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
-          children: [
-            HomeRenderer(
-              state: _state,
-              onRefresh: _refreshHome,
-              onStoryTap: _handleStoryTap,
-              onCreateStoryTap: _handleCreateStory,
-              onPostLike: _handlePostLike,
-              onPostSave: _handlePostSave,
-              onPostAuthorTap: _handlePostAuthorTap,
-              onMenuPressed: _handleMenuPressed,
-              onNotificationPressed: _handleNotificationsPressed,
-              onAdTap: _handleAdTap,
-              onSuggestedUserTap: (_) => _showProfileNavigationPlaceholder(),
-              onFollowToggle: _handleFollowToggle,
-              onDismissSuggestions: _handleDismissSuggestions,
-              onLoadMore: _loadMoreFeed,
-              onCollapseNavChanged: _handleCollapseNavChanged,
-              bottomPadding:
-                  FloatingNavBar.height + FloatingNavBar.bottomMargin + 24,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          HomeRenderer(
+            state: _state,
+            onRefresh: _refreshHome,
+            onStoryTap: _handleStoryTap,
+            onCreateStoryTap: _handleCreateStory,
+            onPostLike: _handlePostLike,
+            onPostSave: _handlePostSave,
+            onPostAuthorTap: _handlePostAuthorTap,
+            onMenuPressed: _handleMenuPressed,
+            onNotificationPressed: _handleNotificationsPressed,
+            onAdTap: _handleAdTap,
+            onSuggestedUserTap: (_) => _showProfileNavigationPlaceholder(),
+            onFollowToggle: _handleFollowToggle,
+            onDismissSuggestions: _handleDismissSuggestions,
+            onLoadMore: _loadMoreFeed,
+            onCollapseNavChanged: _handleCollapseNavChanged,
+            bottomPadding:
+                FloatingNavBar.height + FloatingNavBar.bottomMargin + 24,
+          ),
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: FloatingNavBar.bottomMargin + bottomSafeArea,
+            child: FloatingNavBar(
+              currentTab: NavTab.home,
+              collapsed: _navCollapsed,
+              onTabSelected: _handleNavTabSelected,
+              onExpand: _handleNavExpand,
             ),
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: FloatingNavBar.bottomMargin + bottomSafeArea,
-              child: FloatingNavBar(
-                currentTab: NavTab.home,
-                collapsed: _navCollapsed,
-                onTabSelected: _handleNavTabSelected,
-                onExpand: _handleNavExpand,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

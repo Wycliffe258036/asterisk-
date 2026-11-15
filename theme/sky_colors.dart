@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// The three-stop gradient describing the sky at a given moment: the
-/// zenith (top), a middle band, and the horizon (bottom) — where a
-/// sunrise/sunset glow shows first.
+/// A subtle three-stop ambient tint for the app's background.
 class SkyPalette {
   final Color top;
   final Color mid;
@@ -16,9 +14,6 @@ class SkyPalette {
 
   List<Color> get gradientColors => [top, mid, horizon];
 
-  /// Whether content placed over this sky (icons, text) should be light
-  /// or dark to stay legible. Based on the zenith color, since that's
-  /// what sits directly behind the app's header.
   Brightness get contentBrightness =>
       ThemeData.estimateBrightnessForColor(top);
 
@@ -31,79 +26,69 @@ class SkyPalette {
   }
 
   @override
-  bool operator ==(Object other) {
-    return other is SkyPalette &&
-        other.top == top &&
-        other.mid == mid &&
-        other.horizon == horizon;
-  }
+  bool operator ==(Object other) =>
+      other is SkyPalette &&
+      other.top == top &&
+      other.mid == mid &&
+      other.horizon == horizon;
 
   @override
   int get hashCode => Object.hash(top, mid, horizon);
 }
 
 class _SkyKeyframe {
-  /// Hour of day, 0.0-24.0 (fractional hours allowed).
   final double hour;
   final SkyPalette palette;
 
   const _SkyKeyframe(this.hour, this.palette);
 }
 
-/// Anchor points across a full 24-hour cycle, sorted ascending starting
-/// at hour 0. `skyPaletteFor` blends between whichever two anchors
-/// bracket the current time, wrapping from the last back to the first —
-/// so the cycle is continuous with no visible jump anywhere, including
-/// across midnight.
-final List<_SkyKeyframe> _keyframes = [
-  const _SkyKeyframe(0, SkyPalette(top: Color(0xFFFF0303), mid: Color(0xFF450101), horizon: Color(0xFF171717))), // Deep night
-  const _SkyKeyframe(3, SkyPalette(top: Color(0xFFFFED1A), mid: Color(0xFF454007), horizon: Color(0xFF171717))), // Darkest point
-  const _SkyKeyframe(5, SkyPalette(top: Color(0xFF82FF24), mid: Color(0xFF305E0D), horizon: Color(0xFF171717))), // First light
-  const _SkyKeyframe(6, SkyPalette(top: Color(0xFF20FFC6), mid: Color(0xFF0D6951), horizon: Color(0xFF171717))), // Sunrise
-  const _SkyKeyframe(7.5, SkyPalette(top: Color(0xFF1518FF), mid: Color(0xFF08095E), horizon: Color(0xFF171717))), // Morning
-  const _SkyKeyframe(9, SkyPalette(top: Color(0xFF8129FF), mid: Color(0xFF321063), horizon: Color(0xFF171717))), // Mid-morning
-  const _SkyKeyframe(12, SkyPalette(top: Color(0xFFFF1142), mid: Color(0xFF450512), horizon: Color(0xFF171717))), // Midday
-  const _SkyKeyframe(15, SkyPalette(top: Color(0xFF1E9FFF), mid: Color(0xFF082B45), horizon: Color(0xFF171717))), // Afternoon
-  const _SkyKeyframe(17, SkyPalette(top: Color(0xFFFF8D38), mid: Color(0xFFE3985F), horizon: Color(0xFF171717))), // Golden hour
-  const _SkyKeyframe(18.5, SkyPalette(top: Color(0xFFFF8C8E), mid: Color(0xFFC1548B), horizon: Color(0xFF171717))), // Sunset
-  const _SkyKeyframe(20, SkyPalette(top: Color(0xFF1B2246), mid: Color(0xFF3E2E63), horizon: Color(0xFF171717))), // Dusk
-  const _SkyKeyframe(22, SkyPalette(top: Color(0xFF0A0E22), mid: Color(0xFF131A38), horizon: Color(0xFF171717))), // Night
+/// Muted colour cues across the day. The hues are deliberately close to
+/// neutral so they sit behind the interface rather than competing with it.
+const List<_SkyKeyframe> _keyframes = [
+  _SkyKeyframe(0, SkyPalette(
+    top: Color(0xFFE9EAF2), mid: Color(0xFFECEBF1), horizon: Color(0xFFF0EFF2),
+  )),
+  _SkyKeyframe(5, SkyPalette(
+    top: Color(0xFFF2EDE8), mid: Color(0xFFF3EFEB), horizon: Color(0xFFF5F3F0),
+  )),
+  _SkyKeyframe(8, SkyPalette(
+    top: Color(0xFFF5EDE6), mid: Color(0xFFF5F0EC), horizon: Color(0xFFF7F5F2),
+  )),
+  _SkyKeyframe(12, SkyPalette(
+    top: Color(0xFFEAF0F4), mid: Color(0xFFF0F2F3), horizon: Color(0xFFF6F6F4),
+  )),
+  _SkyKeyframe(15, SkyPalette(
+    top: Color(0xFFE9EFF3), mid: Color(0xFFEEF1F3), horizon: Color(0xFFF5F5F3),
+  )),
+  _SkyKeyframe(18, SkyPalette(
+    top: Color(0xFFF1E9EA), mid: Color(0xFFF2ECEE), horizon: Color(0xFFF6F2F1),
+  )),
+  _SkyKeyframe(20, SkyPalette(
+    top: Color(0xFFEAEAF2), mid: Color(0xFFEDEBF1), horizon: Color(0xFFF0EFF3),
+  )),
 ];
 
-// Easy to retune: how much dark mode deepens whatever phase is current.
-const double _darkenLightnessDelta = 0.14;
-const double _darkenSaturationDelta = 0.04;
-
-/// The same phase, just deeper — not a different palette.
+/// Dark mode keeps the same time-of-day hue, but blends it deeply into
+/// charcoal so foreground content retains strong contrast.
 SkyPalette _darken(SkyPalette palette) {
-  Color darkenColor(Color color) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl
-        .withLightness(
-          (hsl.lightness - _darkenLightnessDelta).clamp(0.02, 1.0),
-        )
-        .withSaturation(
-          (hsl.saturation - _darkenSaturationDelta).clamp(0.0, 1.0),
-        )
-        .toColor();
-  }
+  const charcoal = Color(0xFF17191D);
+  Color tint(Color color) => Color.lerp(charcoal, color, 0.075)!;
 
   return SkyPalette(
-    top: darkenColor(palette.top),
-    mid: darkenColor(palette.mid),
-    horizon: darkenColor(palette.horizon),
+    top: tint(palette.top),
+    mid: tint(palette.mid),
+    horizon: tint(palette.horizon),
   );
 }
 
-/// Returns the sky's gradient for [time], smoothly blended across the
-/// full 24-hour cycle. When [darken] is true, the result is a deeper
-/// version of the same phase rather than an unrelated palette.
+/// Returns a continuously blended palette for the supplied local time.
 SkyPalette skyPaletteFor(DateTime time, {required bool darken}) {
-  final hourOfDay = time.hour + time.minute / 60.0 + time.second / 3600.0;
+  final hour = time.hour + time.minute / 60.0 + time.second / 3600.0;
 
   var index = 0;
   for (var i = 0; i < _keyframes.length; i++) {
-    if (_keyframes[i].hour <= hourOfDay) {
+    if (_keyframes[i].hour <= hour) {
       index = i;
     } else {
       break;
@@ -113,14 +98,12 @@ SkyPalette skyPaletteFor(DateTime time, {required bool darken}) {
   final lower = _keyframes[index];
   final isLast = index == _keyframes.length - 1;
   final upper = isLast ? _keyframes[0] : _keyframes[index + 1];
-
   final lowerHour = lower.hour;
   final upperHour = isLast ? upper.hour + 24 : upper.hour;
-
-  final t =
-      ((hourOfDay - lowerHour) / (upperHour - lowerHour)).clamp(0.0, 1.0);
+  final adjustedHour = isLast && hour < lowerHour ? hour + 24 : hour;
+  final t = ((adjustedHour - lowerHour) / (upperHour - lowerHour))
+      .clamp(0.0, 1.0);
 
   final palette = SkyPalette.lerp(lower.palette, upper.palette, t);
-
   return darken ? _darken(palette) : palette;
 }
