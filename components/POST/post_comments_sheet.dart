@@ -97,6 +97,12 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetColor = isDark ? const Color(0xFF1C1F27) : Colors.white;
+    final primaryText = isDark ? const Color(0xFFF2F2F4) : const Color(0xFF1A1A1A);
+    final secondaryText = isDark ? const Color(0xFFA6AAB8) : const Color(0xFF888888);
+    final dividerColor = isDark ? const Color(0xFF2B2F3A) : const Color(0xFFF0F0F0);
+    final fieldColor = isDark ? const Color(0xFF262A34) : const Color(0xFFF3F3F3);
     final mediaQuery = MediaQuery.of(context);
     final sheetHeight = mediaQuery.size.height * 0.82;
 
@@ -106,7 +112,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: Material(
-          color: Color(0xFFC9C9C9),
+          color: sheetColor,
           child: SizedBox(
             height: sheetHeight,
             child: SafeArea(
@@ -116,12 +122,12 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
                   const SizedBox(height: 8),
                   _buildGrabHandle(),
                   const SizedBox(height: 14),
-                  _buildTitle(),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFEDEDED)),
-                  Expanded(child: _buildEmptyState()),
+                  _buildTitle(primaryText),
+                  Divider(height: 1, thickness: 1, color: dividerColor),
+                  Expanded(child: _buildEmptyState(secondaryText)),
                   _buildQuickReactions(),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFEDEDED)),
-                  _buildComposer(),
+                  Divider(height: 1, thickness: 1, color: dividerColor),
+                  _buildComposer(fieldColor, primaryText, secondaryText),
                 ],
               ),
             ),
@@ -136,23 +142,23 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
       width: 36,
       height: 4,
       decoration: BoxDecoration(
-        color: const Color(0xFFDDDDDD),
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF555B68) : const Color(0xFFDDDDDD),
         borderRadius: BorderRadius.circular(3),
       ),
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(Color primaryText) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Text(
         'Comments',
-        style: AppTypography.title(fontSize: 16, fontWeight: FontWeight.w700),
+        style: AppTypography.title(fontSize: 16, fontWeight: FontWeight.w700, color: primaryText),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Color secondaryText) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -168,7 +174,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
             style: AppTypography.body(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF999999),
+              color: secondaryText,
             ),
           ),
         ],
@@ -196,7 +202,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
     );
   }
 
-  Widget _buildComposer() {
+  Widget _buildComposer(Color fieldColor, Color primaryText, Color secondaryText) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       child: Row(
@@ -210,7 +216,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F3F3),
+                color: fieldColor,
                 borderRadius: BorderRadius.circular(22),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -219,7 +225,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
                 focusNode: _focusNode,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _handleSubmit(),
-                style: AppTypography.body(fontSize: 14),
+                style: AppTypography.body(fontSize: 14, color: primaryText),
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   isDense: true,
@@ -227,7 +233,7 @@ class _PostCommentsSheetState extends State<_PostCommentsSheet> {
                   hintText: 'Add comment',
                   hintStyle: AppTypography.body(
                     fontSize: 14,
-                    color: const Color(0xFFAAAAAA),
+                    color: secondaryText,
                   ),
                 ),
               ),
