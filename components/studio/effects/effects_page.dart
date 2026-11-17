@@ -62,7 +62,6 @@ class _EffectsPageState extends State<EffectsPage>
   bool _toolsExpanded = false;
   bool _showGrid = false;
   bool _flashEnabled = false;
-  bool _handsFree = false;
   bool _hdMode = true;
   int _timerSeconds = 0;
   ResolutionPreset _resolutionPreset = ResolutionPreset.high;
@@ -628,11 +627,11 @@ class _EffectsPageState extends State<EffectsPage>
       _CameraTool('Flip', Icons.flip_camera_android_rounded, _flipCamera),
       _CameraTool('Flash', _flashEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded, _toggleFlash),
       _CameraTool('Sounds', Icons.music_note_rounded, () => _showToolNotice('Soundtracks are available when video recording is added.')),
-      _CameraTool('Hands-free', Icons.timer_rounded, () => setState(() => _handsFree = !_handsFree), active: _handsFree),
+      _CameraTool('Hands-free', Icons.timer_rounded, () => _showToolNotice('Hands-free recording will be available when video capture is added.')),
       _CameraTool('Selfie settings', Icons.face_retouching_natural_rounded, () => _showToolNotice('Selfie adjustments are not connected yet.')),
       _CameraTool('HD Mode', Icons.hd_rounded, _toggleHd, active: _hdMode),
       _CameraTool('Multi Snap', Icons.library_add_rounded, () => _showToolNotice('Multi Snap will be enabled with burst capture.')),
-      _CameraTool('Dual Camera', Icons.duo_rounded, () => _showToolNotice('Dual-camera capture depends on device support and is not available yet.')),
+      _CameraTool('Dual Camera', Icons.camera_alt_rounded, () => _showToolNotice('Dual-camera capture depends on device support and is not available yet.')),
       _CameraTool('Timer', Icons.timer_outlined, _chooseTimer),
       _CameraTool('Speed', Icons.speed_rounded, () => _showToolNotice('Speed controls are for video recording, which is not implemented yet.')),
       _CameraTool('Stabilisation', Icons.vibration_rounded, () => _showToolNotice('Stabilisation depends on camera hardware support.')),
