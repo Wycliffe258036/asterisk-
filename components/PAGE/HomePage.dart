@@ -14,7 +14,7 @@ import '../../models/user.dart';
 import '../../theme/sky_gradient_background.dart';
 
 import '../nav/FloatingNavBar.dart';
-import '../nav/nav_navigation4.dart';
+import '../nav/nav_navigation.dart';
 import '/notifications/notifications_page.dart';
 import '../stories/story_viewer.dart';
 import 'HomeRenderer.dart';
