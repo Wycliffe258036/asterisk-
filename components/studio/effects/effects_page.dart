@@ -14,6 +14,7 @@ import './create_effect_sheet.dart';
 import './face_effects.dart';
 import './face_overlay.dart';
 import './face_tracker.dart';
+import 'editor_page.dart';
 
 /// Live camera with real-time, on-device face-tracked effects.
 ///
@@ -58,6 +59,12 @@ class _EffectsPageState extends State<EffectsPage>
   bool _reviewing = false;
   bool _capturing = false;
   bool _flash = false;
+  bool _toolsExpanded = false;
+  bool _showGrid = false;
+  bool _flashEnabled = false;
+  bool _hdMode = true;
+  int _timerSeconds = 0;
+  ResolutionPreset _resolutionPreset = ResolutionPreset.high;
 
   // Debug-only detection rate, shown in the status pill.
   int _detectionsThisWindow = 0;
@@ -150,7 +157,7 @@ class _EffectsPageState extends State<EffectsPage>
 
       final controller = CameraController(
         _cameras[_cameraIndex],
-        ResolutionPreset.high,
+        _resolutionPreset,
         enableAudio: false,
         // The formats ML Kit accepts from the camera plugin.
         imageFormatGroup: defaultTargetPlatform == TargetPlatform.android
@@ -315,6 +322,12 @@ class _EffectsPageState extends State<EffectsPage>
 
   Future<void> _capture() async {
     if (_capturing) return;
+    if (_timerSeconds > 0) {
+      setState(() => _capturing = true);
+      await Future<void>.delayed(Duration(seconds: _timerSeconds));
+      if (!mounted) return;
+      setState(() => _capturing = false);
+    }
 
     final boundary = _captureKey.currentContext?.findRenderObject()
         as RenderRepaintBoundary?;
@@ -415,6 +428,13 @@ class _EffectsPageState extends State<EffectsPage>
                 ),
               ),
             ),
+            if (_showGrid)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _CameraGridPainter()),
+                ),
+              ),
+            Positioned(top: 54, right: 10, child: SafeArea(child: _buildToolsPanel())),
             SafeArea(
               child: Column(
                 children: [
@@ -580,6 +600,139 @@ class _EffectsPageState extends State<EffectsPage>
         ],
       ),
     );
+  }
+
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+      child: Row(
+        children: [
+          _RoundButton(
+            icon: Icons.edit_rounded,
+            label: 'Open editor',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditorPage()),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('Editor', style: AppTypography.body(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolsPanel() {
+    final tools = <_CameraTool>[
+      _CameraTool('Flip', Icons.flip_camera_android_rounded, _flipCamera),
+      _CameraTool('Flash', _flashEnabled ? Icons.flash_on_rounded : Icons.flash_off_rounded, _toggleFlash),
+      _CameraTool('Sounds', Icons.music_note_rounded, () => _showToolNotice('Soundtracks are available when video recording is added.')),
+      _CameraTool('Hands-free', Icons.timer_rounded, () => _showToolNotice('Hands-free recording will be available when video capture is added.')),
+      _CameraTool('Selfie settings', Icons.face_retouching_natural_rounded, () => _showToolNotice('Selfie adjustments are not connected yet.')),
+      _CameraTool('HD Mode', Icons.hd_rounded, _toggleHd, active: _hdMode),
+      _CameraTool('Multi Snap', Icons.library_add_rounded, () => _showToolNotice('Multi Snap will be enabled with burst capture.')),
+      _CameraTool('Dual Camera', Icons.camera_alt_rounded, () => _showToolNotice('Dual-camera capture depends on device support and is not available yet.')),
+      _CameraTool('Timer', Icons.timer_outlined, _chooseTimer),
+      _CameraTool('Speed', Icons.speed_rounded, () => _showToolNotice('Speed controls are for video recording, which is not implemented yet.')),
+      _CameraTool('Stabilisation', Icons.vibration_rounded, () => _showToolNotice('Stabilisation depends on camera hardware support.')),
+      _CameraTool('Portrait', Icons.portrait_rounded, () => _showToolNotice('Portrait mode is not connected yet.')),
+      _CameraTool('Green Screen', Icons.wallpaper_rounded, () => _showToolNotice('Green Screen is planned for a later effects update.')),
+      _CameraTool('Grid', Icons.grid_4x4_rounded, () => setState(() => _showGrid = !_showGrid), active: _showGrid),
+    ];
+    final visibleTools = _toolsExpanded ? tools : tools.take(3).toList();
+
+    return Container(
+      width: 194,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.72),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.72),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final tool in visibleTools)
+                    _CameraToolRow(tool: tool),
+                ],
+              ),
+            ),
+          ),
+          InkWell(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+            onTap: () => setState(() => _toolsExpanded = !_toolsExpanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(_toolsExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 25),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleFlash() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      _showToolNotice('Flash requires an active camera.');
+      return;
+    }
+    final enabled = !_flashEnabled;
+    try {
+      await controller.setFlashMode(enabled ? FlashMode.always : FlashMode.off);
+      if (mounted) setState(() => _flashEnabled = enabled);
+    } catch (_) {
+      _showToolNotice('This camera does not support flash.');
+    }
+  }
+
+  Future<void> _toggleHd() async {
+    if (_startingCamera || _controller == null) return;
+    final nextHd = !_hdMode;
+    setState(() {
+      _hdMode = nextHd;
+      _resolutionPreset = nextHd ? ResolutionPreset.high : ResolutionPreset.medium;
+    });
+    await _releaseCamera(rebuild: true);
+    await _startCamera();
+  }
+
+  Future<void> _chooseTimer() async {
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: const Color(0xFF202020),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(padding: EdgeInsets.all(16), child: Text('Capture timer', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700))),
+            for (final seconds in [0, 3, 5, 10])
+              ListTile(
+                title: Text(seconds == 0 ? 'Off' : '$seconds seconds', style: const TextStyle(color: Colors.white)),
+                trailing: _timerSeconds == seconds ? const Icon(Icons.check, color: Colors.white) : null,
+                onTap: () => Navigator.pop(sheetContext, seconds),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null && mounted) setState(() => _timerSeconds = selected);
+  }
+
+  void _showToolNotice(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 2)));
   }
 
   /// Small status line under the top bar: what the tracker is doing,
@@ -815,4 +968,47 @@ class _EffectChip extends StatelessWidget {
       ),
     );
   }
+}
+
+
+class _CameraTool {
+  const _CameraTool(this.label, this.icon, this.onTap, {this.active = false});
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool active;
+}
+
+class _CameraToolRow extends StatelessWidget {
+  const _CameraToolRow({required this.tool});
+  final _CameraTool tool;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: tool.onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(child: Text(tool.label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
+          Icon(tool.icon, color: tool.active ? const Color(0xFFCB4CFF) : Colors.white, size: 22),
+        ],
+      ),
+    ),
+  );
+}
+
+class _CameraGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white.withOpacity(0.38)..strokeWidth = 0.7;
+    for (var i = 1; i < 3; i++) {
+      final x = size.width * i / 3;
+      final y = size.height * i / 3;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
